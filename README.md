@@ -1,7 +1,5 @@
 # esm-variants
 
-## Genome-wide prediction of disease variants with a deep protein language model
-
 This repository contains resources and tools developed for the paper, ["Genome-wide prediction of disease variants with a deep protein language model"](https://www.biorxiv.org/content/10.1101/2022.08.25.505311v1) by Nadav Brandes, Grant Goldman, Charlotte H. Wang, Chun Jimmie Ye, and Vasilis Ntranos.
 
 A complete catalog of missense variant effect predictions is accessible [here](https://huggingface.co/spaces/ntranoslab/esm_variants).
