@@ -18,9 +18,8 @@ def load_esm_model(model_name,device=0):
   batch_converter = alphabet.get_batch_converter() 
   return model.eval().to(device),alphabet,batch_converter,repr_layer
 
-def get_wt_LLR(input_df,device=0,silent=False): 
+def get_wt_LLR(input_df,model,alphabet,batch_converter,device=0,silent=False): 
   # input: df.columns= id,	gene,	seq, length
-  # requires global model and batch_converter
   # make sure input_df does not contain any nonstandard amino acids
   AAorder=['K','R','H','E','D','N','Q','T','S','C','G','A','V','L','I','M','P','Y','F','W']
   genes = input_df.id.values
@@ -75,7 +74,7 @@ def get_wt_LLR(input_df,device=0,silent=False):
 
   return input_df_ids,LLRs
 
-def get_logits(seq,format=None,device=0):
+def get_logits(seq,model,batch_converter,format=None,device=0):
   data = [ ("_", seq),]
   batch_labels, batch_strs, batch_tokens = batch_converter(data)
   batch_tokens = batch_tokens.to(device)
@@ -88,8 +87,8 @@ def get_logits(seq,format=None,device=0):
   else:
     return logits[0][1:-1,:]
 
-def get_PLL(seq,reduce=np.sum,device=0):
-  s=get_logits(seq,device)
+def get_PLL(seq,model,alphabet,batch_converter,reduce=np.sum,device=0):
+  s=get_logits(seq,model=model,batch_converter=batch_converter,device=device)
   idx=[alphabet.tok_to_idx[i] for i in seq]
   return reduce(np.diag(s[:,idx]))
 
@@ -152,13 +151,13 @@ def get_intervals_and_weights(seq_len,min_overlap=511,max_len=1022,s=16):
 
 
 ## PLLR score for indels
-def get_PLLR(wt_seq,mut_seq,start_pos,weighted=False):
+def get_PLLR(wt_seq,mut_seq,start_pos,model,alphabet,batch_converter,weighted=False,device=0):
   fn=np.sum if not weighted else np.mean
   if max(len(wt_seq),len(mut_seq))<=1022:
-    return  get_PLL(mut_seq,fn) - get_PLL(wt_seq,fn)
+    return  get_PLL(mut_seq,model=model,alphabet=alphabet,batch_converter=batch_converter,reduce=fn,device=device) - get_PLL(wt_seq,model=model,alphabet=alphabet,batch_converter=batch_converter,reduce=fn,device=device)
   else:
     wt_seq,mut_seq,start_pos = crop_indel(wt_seq,mut_seq,start_pos)
-    return  get_PLL(mut_seq,fn) - get_PLL(wt_seq,fn)
+    return  get_PLL(mut_seq,model=model,alphabet=alphabet,batch_converter=batch_converter,reduce=fn,device=device) - get_PLL(wt_seq,model=model,alphabet=alphabet,batch_converter=batch_converter,reduce=fn,device=device)
 
 def crop_indel(ref_seq,alt_seq,ref_start):
   # Start pos: 1-indexed start position of variant
